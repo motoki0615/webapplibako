@@ -1,0 +1,10 @@
+[
+  {
+    "id": "oss_rank",
+    "title": "oss_rank",
+    "description": "Zennを元にしたITトレンドワードのランキング可視化",
+    "thumbnail": "/thumbs/oss_rank.png",
+    "link": "/apps/oss_rank/",
+    "tags": ["tool","oss"]
+  }
+]

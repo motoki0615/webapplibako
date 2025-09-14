@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/apps/oss_rank/**",
+        "destination": "/apps/oss_rank/index.html"
+      }
+    ]
+  }
+}
