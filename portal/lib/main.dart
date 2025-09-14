@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() => runApp(const ForestPortalApp());
 
@@ -28,6 +29,9 @@ class ForestPortalApp extends StatelessWidget {
       title: 'ウェブアプリの森',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        textTheme: GoogleFonts.notoSansJpTextTheme(
+          Theme.of(context).textTheme,
+        ),
         useMaterial3: true,
         colorScheme: colorScheme,
         scaffoldBackgroundColor: surface,

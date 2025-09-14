@@ -5,6 +5,19 @@
     "description": "Zennを元にしたITトレンドワードのランキング可視化",
     "thumbnail": "/thumbs/oss_rank.png",
     "link": "/apps/oss_rank/",
-    "tags": ["tool","oss"]
+    "tags": [
+      "tool",
+      "oss"
+    ]
+  },
+  {
+    "id": "kantan_meiro",
+    "title": "インスタント迷路",
+    "description": "迷路に挑戦しよう",
+    "thumbnail": "/thumbs/kantan_meiro.png",
+    "link": "/apps/kantan_meiro/",
+    "tags": [
+      "meiro"
+    ]
   }
 ]

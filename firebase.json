@@ -6,6 +6,14 @@
       {
         "source": "/apps/oss_rank/**",
         "destination": "/apps/oss_rank/index.html"
+      },
+      {
+        "source": "/apps/kantan_meiro",
+        "destination": "/apps/kantan_meiro/index.html"
+      },
+      {
+        "source": "/apps/kantan_meiro/**",
+        "destination": "/apps/kantan_meiro/index.html"
       }
     ]
   }
