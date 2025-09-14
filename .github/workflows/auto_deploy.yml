@@ -1,0 +1,120 @@
+name: Build & Deploy portal + all apps
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/**'
+      - 'portal/**'
+      - '.github/workflows/**'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      FIREBASE_PROJECT_ID: webapplibako
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      # ---------- 1) apps.json を自動生成 ----------
+      - name: Generate portal/assets/apps.json from apps/*/meta.json
+        run: |
+          mkdir -p portal/assets hosting/thumbs
+          python - <<'PY'
+          import json,glob,os,shutil
+          apps=[]
+          for meta in glob.glob('apps/*/meta.json'):
+            with open(meta,'r',encoding='utf-8') as f: j=json.load(f)
+            # サムネイルが apps/<id>/thumb.png にあれば hosting/thumbs/<id>.png にコピー
+            app_id=j.get('id')
+            if app_id:
+              src=f'apps/{app_id}/thumb.png'
+              dst=f'hosting/thumbs/{app_id}.png'
+              if os.path.exists(src):
+                os.makedirs(os.path.dirname(dst),exist_ok=True)
+                shutil.copyfile(src,dst)
+            apps.append(j)
+          apps=sorted(apps,key=lambda x: x.get('id',''))
+          os.makedirs('portal/assets',exist_ok=True)
+          with open('portal/assets/apps.json','w',encoding='utf-8') as f:
+            json.dump(apps,f,ensure_ascii=False,indent=2)
+          print(f'Generated apps.json with {len(apps)} entries')
+          PY
+
+      # ---------- 2) ポータルをビルド（SWなし） ----------
+      - name: Build portal (no PWA)
+        working-directory: portal
+        run: |
+          # base タグのプレースホルダ保険
+          grep -q 'FLUTTER_BASE_HREF' web/index.html || \
+            sed -i 's|<head>|<head>\n  <base href="$FLUTTER_BASE_HREF">|' web/index.html
+          flutter pub get
+          flutter build web --pwa-strategy=none
+
+      # ---------- 3) 各アプリをサブパスでビルド ----------
+      - name: Build all apps (subpath & relative API)
+        run: |
+          set -e
+          APPS=$(ls -d apps/*/frontend 2>/dev/null || true)
+          mkdir -p hosting/apps
+          for PATHFE in $APPS; do
+            ID=$(echo "$PATHFE" | awk -F'/' '{print $2}')
+            echo "===> Building $ID"
+            pushd "$PATHFE" >/dev/null
+            flutter pub get
+            # 相対API前提: API_BASE=api を渡す（必要なければ消してOK）
+            flutter build web --release \
+              --base-href="/apps/${ID}/" \
+              --pwa-strategy=none \
+              --dart-define=API_BASE=api
+            popd >/dev/null
+            mkdir -p "hosting/apps/${ID}"
+            cp -r "apps/${ID}/frontend/build/web/"* "hosting/apps/${ID}/"
+          done
+
+      # ---------- 4) hosting を組み立て ----------
+      - name: Assemble hosting root
+        run: |
+          # ルートにポータルを展開（SW残骸削除）
+          rm -rf hosting/index.html hosting/flutter_service_worker.js hosting/version.json || true
+          cp -r portal/build/web/* hosting/
+
+      # ---------- 5) firebase.json を動的生成（各アプリの rewrite） ----------
+      - name: Generate firebase.json with rewrites
+        run: |
+          python - <<'PY' > firebase.json
+          import json,glob,os
+          ids=[p.split('/')[1] for p in glob.glob('apps/*/frontend')]
+          rew=[{"source": f"/apps/{i}/**", "destination": f"/apps/{i}/index.html"} for i in ids]
+          conf={
+            "hosting":{
+              "public":"hosting",
+              "ignore":["firebase.json","**/.*","**/node_modules/**"],
+              "headers":[
+                {"source":"/apps/**/api/*.json","headers":[{"key":"Cache-Control","value":"no-store"}]},
+                {"source":"/assets/apps.json","headers":[{"key":"Cache-Control","value":"no-store"}]}
+              ],
+              "rewrites": rew
+            }
+          }
+          print(json.dumps(conf,ensure_ascii=False,indent=2))
+          PY
+          cat firebase.json
+
+      # ---------- 6) デプロイ ----------
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
