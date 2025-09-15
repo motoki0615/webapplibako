@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(const ForestPortalApp());
 
@@ -76,13 +77,24 @@ class _PortalHomeState extends State<PortalHome> {
   String _keyword = '';
   Set<String> _selectedTags = {};
 
-  Future<List<AppEntry>> _loadApps() async {
+Future<List<AppEntry>> _loadApps() async {
+  // 同一オリジンの /assets/apps.json を取得（キャッシュ無効化用にクエリ付与）
+  final uri = Uri.parse('/assets/apps.json?t=${DateTime.now().millisecondsSinceEpoch}');
+  try {
+    final res = await http.get(uri, headers: {'Cache-Control': 'no-cache'});
+    if (res.statusCode == 200) {
+      final list = jsonDecode(utf8.decode(res.bodyBytes)) as List;
+      return list.map((e) => AppEntry.fromJson(Map<String, dynamic>.from(e))).toList();
+    } else {
+      throw Exception('HTTP ${res.statusCode}');
+    }
+  } catch (e) {
+    // フォールバック（ローカル開発や離線時用にバンドルの apps.json を参照）
     final raw = await rootBundle.loadString('assets/apps.json');
     final list = jsonDecode(raw) as List;
-    return list
-        .map((e) => AppEntry.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    return list.map((e) => AppEntry.fromJson(Map<String, dynamic>.from(e))).toList();
   }
+}
 
   @override
   Widget build(BuildContext context) {
