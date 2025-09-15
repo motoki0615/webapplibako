@@ -19,5 +19,13 @@
     "tags": [
       "meiro"
     ]
+  },
+  {
+    "id": "yj_maker",
+    "title": "適当四字熟語メーカー",
+    "description": "ちょっとバカなAIが適当に四字熟語を作ります",
+    "thumbnail": "/thumbs/yj_maker.png",
+    "link": "/apps/yj_maker/",
+    "tags": ["暇つぶし"]
   }
 ]

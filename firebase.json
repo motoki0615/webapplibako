@@ -1,6 +1,15 @@
 {
   "hosting": {
     "public": "hosting",
+    "headers": [
+      {
+        "source": "/apps/yj_maker/**",
+        "headers": [
+          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+        ]
+      }
+    ],
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
@@ -14,7 +23,9 @@
       {
         "source": "/apps/kantan_meiro/**",
         "destination": "/apps/kantan_meiro/index.html"
-      }
+      },
+      { "source": "/apps/yj_maker", "destination": "/apps/yj_maker/index.html" },
+      { "source": "/apps/yj_maker/**", "destination": "/apps/yj_maker/index.html" }
     ]
   }
 }
