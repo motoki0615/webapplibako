@@ -19,29 +19,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive   # サブモジュール運用時のみ有効/無視されてもOK
+          lfs: true               # 画像をLFSにしている場合に備え
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
 
-      # ---------- 1) apps.json を自動生成 ----------
+      # ---------- 0) ざっとレイアウト確認（デバッグ用/任意） ----------
+      - name: Debug apps layout
+        run: |
+          echo "== APPS tree =="
+          ls -lah apps || true
+          echo "== Frontend folders =="
+          ls -d apps/*/frontend 2>/dev/null || echo "(none)"
+
+      # ---------- 1) apps.json を自動生成（thumbコピー付き） ----------
       - name: Generate portal/assets/apps.json from apps/*/meta.json
         run: |
+          set -euo pipefail
           mkdir -p portal/assets hosting/thumbs
           python - <<'PY'
-          import json,glob,os,shutil
+          import json,glob,os,shutil,sys
           apps=[]
           for meta in glob.glob('apps/*/meta.json'):
             with open(meta,'r',encoding='utf-8') as f: j=json.load(f)
-            # サムネイルが apps/<id>/thumb.png にあれば hosting/thumbs/<id>.png にコピー
             app_id=j.get('id')
-            if app_id:
-              src=f'apps/{app_id}/thumb.png'
-              dst=f'hosting/thumbs/{app_id}.png'
-              if os.path.exists(src):
-                os.makedirs(os.path.dirname(dst),exist_ok=True)
-                shutil.copyfile(src,dst)
+            # id未指定ならフォルダ名で補完
+            if not app_id:
+              app_id = meta.split('/')[1]
+              j['id'] = app_id
+            # link未指定なら /apps/<id>/ を自動付与
+            j.setdefault('link', f'/apps/{app_id}/')
+            # thumbコピー（任意）
+            src=f'apps/{app_id}/thumb.png'
+            dst=f'hosting/thumbs/{app_id}.png'
+            if os.path.exists(src):
+              os.makedirs(os.path.dirname(dst),exist_ok=True)
+              shutil.copyfile(src,dst)
             apps.append(j)
           apps=sorted(apps,key=lambda x: x.get('id',''))
           os.makedirs('portal/assets',exist_ok=True)
@@ -54,7 +72,7 @@ jobs:
       - name: Build portal (no PWA)
         working-directory: portal
         run: |
-          # base タグのプレースホルダ保険
+          # base タグのプレースホルダ保険（無ければ挿入）
           grep -q 'FLUTTER_BASE_HREF' web/index.html || \
             sed -i 's|<head>|<head>\n  <base href="$FLUTTER_BASE_HREF">|' web/index.html
           flutter pub get
@@ -63,22 +81,29 @@ jobs:
       # ---------- 3) 各アプリをサブパスでビルド ----------
       - name: Build all apps (subpath & relative API)
         run: |
-          set -e
+          set -euo pipefail
           APPS=$(ls -d apps/*/frontend 2>/dev/null || true)
+          echo "Detected frontends:"
+          echo "$APPS"
           mkdir -p hosting/apps
           for PATHFE in $APPS; do
             ID=$(echo "$PATHFE" | awk -F'/' '{print $2}')
             echo "===> Building $ID"
             pushd "$PATHFE" >/dev/null
+            # 各アプリの index.html に base プレースホルダが無い場合の保険
+            test -f web/index.html && \
+              (grep -q 'FLUTTER_BASE_HREF' web/index.html || sed -i 's|<head>|<head>\n  <base href="$FLUTTER_BASE_HREF">|' web/index.html) || true
             flutter pub get
-            # 相対API前提: API_BASE=api を渡す（必要なければ消してOK）
             flutter build web --release \
               --base-href="/apps/${ID}/" \
               --pwa-strategy=none \
               --dart-define=API_BASE=api
+            test -d build/web || { echo "build/web not found for $ID"; exit 1; }
             popd >/dev/null
+            rm -rf "hosting/apps/${ID}"            # 古い残骸を除去
             mkdir -p "hosting/apps/${ID}"
             cp -r "apps/${ID}/frontend/build/web/"* "hosting/apps/${ID}/"
+            echo "Copied to hosting/apps/${ID}"
           done
 
       # ---------- 4) hosting を組み立て ----------
@@ -92,7 +117,7 @@ jobs:
       - name: Generate firebase.json with rewrites
         run: |
           python - <<'PY' > firebase.json
-          import json,glob,os
+          import json,glob
           ids=[p.split('/')[1] for p in glob.glob('apps/*/frontend')]
           rew=[{"source": f"/apps/{i}/**", "destination": f"/apps/{i}/index.html"} for i in ids]
           conf={
@@ -111,6 +136,14 @@ jobs:
           cat firebase.json
 
       # ---------- 6) デプロイ ----------
+      - name: Inspect hosting/apps before deploy (debug)
+        run: |
+          echo "== hosting/apps =="
+          ls -lah hosting/apps || true
+          for d in hosting/apps/*; do
+            test -d "$d" && echo "-> $(basename "$d")" && ls -lah "$d" | head -n 10
+          done
+
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
