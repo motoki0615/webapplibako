@@ -1,31 +1,44 @@
 {
   "hosting": {
     "public": "hosting",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "headers": [
       {
-        "source": "/apps/yj_maker/**",
+        "source": "/apps/**/api/*.json",
         "headers": [
-          { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-          { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
+        ]
+      },
+      {
+        "source": "/assets/apps.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-store"
+          }
         ]
       }
     ],
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
-        "source": "/apps/oss_rank/**",
-        "destination": "/apps/oss_rank/index.html"
-      },
-      {
-        "source": "/apps/kantan_meiro",
-        "destination": "/apps/kantan_meiro/index.html"
+        "source": "/apps/factor_sprint/**",
+        "destination": "/apps/factor_sprint/index.html"
       },
       {
         "source": "/apps/kantan_meiro/**",
         "destination": "/apps/kantan_meiro/index.html"
       },
-      { "source": "/apps/yj_maker", "destination": "/apps/yj_maker/index.html" },
-      { "source": "/apps/yj_maker/**", "destination": "/apps/yj_maker/index.html" }
+      {
+        "source": "/apps/yj_maker/**",
+        "destination": "/apps/yj_maker/index.html"
+      }
     ]
   }
 }

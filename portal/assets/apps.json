@@ -1,13 +1,14 @@
 [
   {
-    "id": "oss_rank",
-    "title": "oss_rank",
-    "description": "Zennを元にしたITトレンドワードのランキング可視化",
-    "thumbnail": "/thumbs/oss_rank.png",
-    "link": "/apps/oss_rank/",
+    "id": "factor_sprint",
+    "title": "10秒素因数分解",
+    "description": "10秒以内に素因数分解せよ！初級〜超級まで連続正解に挑戦する暇つぶし算数ゲーム。",
+    "thumbnail": "/thumbs/factor_sprint.png",
+    "link": "/apps/factor_sprint/",
     "tags": [
-      "tool",
-      "oss"
+      "暇つぶし",
+      "脳トレ",
+      "ゲーム"
     ]
   },
   {
@@ -26,6 +27,8 @@
     "description": "ちょっとバカなAIが適当に四字熟語を作ります",
     "thumbnail": "/thumbs/yj_maker.png",
     "link": "/apps/yj_maker/",
-    "tags": ["暇つぶし"]
+    "tags": [
+      "暇つぶし"
+    ]
   }
 ]
