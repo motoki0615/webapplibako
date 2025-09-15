@@ -112,6 +112,13 @@ jobs:
           # ルートにポータルを展開（SW残骸削除）
           rm -rf hosting/index.html hosting/flutter_service_worker.js hosting/version.json || true
           cp -r portal/build/web/* hosting/
+      # ---------- 4.5) apps.json を hosting に配置（公開用） ----------
+      - name: Put apps.json into hosting/assets
+        run: |
+          mkdir -p hosting/assets
+          cp portal/assets/apps.json hosting/assets/apps.json
+          echo "hosting/assets/apps.json:"
+          head -n 5 hosting/assets/apps.json || true
 
       # ---------- 5) firebase.json を動的生成（各アプリの rewrite） ----------
       - name: Generate firebase.json with rewrites
