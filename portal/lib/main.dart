@@ -388,11 +388,10 @@ class AppCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                 child: Image.network(
-                  _resolve(entry.thumbnail).toString(),
+                  '${entry.thumbnail}?t=${DateTime.now().millisecondsSinceEpoch}',
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      const Center(child: Icon(Icons.apps, size: 48, color: Colors.black45)),
-                ),
+                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.apps, size: 48)),
+                )
               ),
             ),
             Padding(
